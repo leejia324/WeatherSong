@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WeatherSong</title>
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="style.css?v=10" />
+  <!-- JS 동작 시에만 등장 애니메이션의 '숨김' 상태 적용 (JS 실패해도 내용은 보임) -->
+  <script>
+    document.documentElement.classList.add("js");
+  </script>
+</head>
+<body>
+  <!-- 유리 굴절 필터 (크롬에서만 backdrop-filter로 동작) -->
+  <svg class="glass-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+    <filter id="glass-distortion" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="2" seed="12" result="noise" />
+      <feGaussianBlur in="noise" stdDeviation="3" result="softNoise" />
+      <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="70" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+    <!-- 날씨 아이콘용: 굴절 100 (더 강함) -->
+    <filter id="glass-distortion-strong" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.01 0.014" numOctaves="2" seed="7" result="noise" />
+      <feGaussianBlur in="noise" stdDeviation="3" result="softNoise" />
+      <feDisplacementMap in="SourceGraphic" in2="softNoise" scale="100" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+  </svg>
+
+  <!-- 전역 고정 배경 (스크롤에 따라 서로 크로스페이드) -->
+  <div class="backgrounds" aria-hidden="true">
+    <div class="bg-layer bg-hero"></div>
+    <div class="bg-layer bg-song"></div>
+    <div class="bg-layer bg-regions"></div>
+  </div>
+
+  <!-- 오디오 (무한 반복). song.mp3 파일을 프로젝트 폴더에 넣어주세요 -->
+  <audio id="player-audio" loop preload="auto">
+    <source src="song.mp3" type="audio/mpeg" />
+  </audio>
+
+  <!-- 상단 고정 뮤직 플레이어 -->
+  <div class="player">
+    <button class="player__play" id="playBtn" type="button" aria-label="재생/일시정지">
+      <svg class="player__triangle icon-play" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M8 5.5v13l11-6.5z" />
+      </svg>
+      <svg class="player__pause icon-pause" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 5h3.4v14H7zM13.6 5H17v14h-3.4z" />
+      </svg>
+    </button>
+    <div class="player__info">
+      <div class="marquee">
+        <div class="marquee__track">
+          <span class="marquee__item">romeo n juliet (feat. 유라(youra)) - 죠지, 유라</span>
+        </div>
+      </div>
+      <div class="progress">
+        <div class="progress__fill"></div>
+        <span class="progress__knob"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 맑음 섹션 -->
+  <section class="hero">
+    <div class="stage">
+      <!-- 로고 -->
+      <div class="logo reveal">WeatherSong</div>
+
+      <!-- 왼쪽 정렬 스택 -->
+      <div class="left-stack">
+        <!-- 위치 칩 -->
+        <div class="chip reveal">
+          <svg class="chip__pin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 21.5s6.5-5.9 6.5-11a6.5 6.5 0 1 0-13 0c0 5.1 6.5 11 6.5 11z"
+              stroke="#fff" stroke-width="2" stroke-linejoin="round" />
+            <circle cx="12" cy="10.2" r="2.4" stroke="#fff" stroke-width="2" />
+          </svg>
+          <span class="chip__addr">대전광역시 서구</span>
+          <span class="chip__dot">·</span>
+          <span class="chip__temp">26<span class="chip__unit">°C</span></span>
+        </div>
+
+        <!-- 타이틀 카드 -->
+        <div class="card card--title reveal">
+          <p>오늘 하늘은 눈부시게 맑아요.<br />산책을 다녀오는 건 어떨까요?</p>
+        </div>
+
+        <!-- 서브타이틀 카드 -->
+        <div class="card card--subtitle reveal">
+          <p>햇살 가득한 날엔 경쾌하고 밝은 곡으로!<br />창문 열고 볼륨을 살짝 높여보세요.</p>
+        </div>
+      </div>
+
+      <!-- 날씨 아이콘 (구름/해도 유리 처리) -->
+      <div class="weather-icon reveal">
+        <div class="wi-glass wi-sun" aria-hidden="true"></div>
+        <div class="wi-glass wi-cloud" aria-hidden="true"></div>
+        <svg class="wi-outline" viewBox="0 0 355 263" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M37.1019 65.8282C62.7323 41.129 98.4829 26.8436 133.858 33.5548C169.028 40.2273 203.691 67.6272 227.617 125.861C227.611 125.834 227.608 125.819 227.608 125.816C252.051 101.372 281.812 99.3646 309.086 110.878C385.415 146.701 350.857 256.999 306.678 259.05C306.377 259.156 306.014 259.256 305.596 259.349C303.25 259.87 298.765 260.315 292.643 260.687C280.374 261.431 261.383 261.886 239.38 262.012C195.373 262.263 139.276 261.199 100.738 258.501C96.5288 258.206 92.2011 257.165 88.3255 255.493C31.6976 231.068 6.00484 196.041 0.948551 160.859C-4.10404 125.703 11.472 90.527 37.1019 65.8282Z" />
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- 노래 공개 섹션 -->
+  <section class="song">
+    <div class="song__inner">
+      <div class="card song__lead reveal">
+        <p>오늘의 날씨에 맞는 노래를 준비했어요</p>
+      </div>
+
+      <div class="card song__album reveal">
+        <img src="album.png" alt="romeo n juliet 앨범 커버" />
+      </div>
+
+      <div class="card song__meta reveal">
+        <p>romeo n juliet (feat. 유라(youra)) - 죠지, 유라</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 다른 지역 날씨 섹션 -->
+  <section class="regions">
+    <div class="regions__inner">
+      <div class="regions__header reveal">
+        <div class="card regions__title"><span>다른 지역 날씨</span></div>
+        <p class="regions__sub">지금 다른 도시들은 이런 날씨예요.</p>
+      </div>
+
+      <div class="regions__cards">
+        <!-- 카드 3개: JS가 가장 가까운 다른 도시 3곳 데이터로 채움 -->
+        <div class="card region-card reveal">
+          <div class="region-card__name"><span></span></div>
+          <div class="region-card__cond"></div>
+          <div class="ricon ricon--cloudy">
+            <div class="ricon__frost"></div>
+            <div class="ricon__art"><img alt="" /></div>
+          </div>
+          <div class="region-card__temp"></div>
+        </div>
+        <div class="card region-card reveal">
+          <div class="region-card__name"><span></span></div>
+          <div class="region-card__cond"></div>
+          <div class="ricon ricon--cloudy">
+            <div class="ricon__frost"></div>
+            <div class="ricon__art"><img alt="" /></div>
+          </div>
+          <div class="region-card__temp"></div>
+        </div>
+        <div class="card region-card reveal">
+          <div class="region-card__name"><span></span></div>
+          <div class="region-card__cond"></div>
+          <div class="ricon ricon--cloudy">
+            <div class="ricon__frost"></div>
+            <div class="ricon__art"><img alt="" /></div>
+          </div>
+          <div class="region-card__temp"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="script.js?v=9" onerror="document.documentElement.classList.remove('js')"></script>
+</body>
+</html>
