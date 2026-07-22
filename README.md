@@ -2,7 +2,8 @@
 
 접속한 지역의 실시간 날씨에 맞춰 어울리는 노래를 추천해주는 스크롤형 웹페이지입니다.
 
-![WeatherSong 미리보기](image.png)
+![alt text](laptop.gif)
+![alt text](phone.gif)
 
 <br>
 
