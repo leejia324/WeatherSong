@@ -6,7 +6,7 @@
   <title>WeatherSong</title>
   <link rel="stylesheet" as="style" crossorigin
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@latest/dist/web/static/pretendard.min.css" />
-  <link rel="stylesheet" href="style.css?v=14" />
+  <link rel="stylesheet" href="style.css?v=17" />
   <!-- JS 동작 시에만 등장 애니메이션의 '숨김' 상태 적용 (JS 실패해도 내용은 보임) -->
   <script>
     document.documentElement.classList.add("js");
@@ -37,7 +37,7 @@
 
   <!-- 오디오 (무한 반복). song.mp3 파일을 프로젝트 폴더에 넣어주세요 -->
   <audio id="player-audio" loop preload="auto">
-    <source src="song.mp3" type="audio/mpeg" />
+    <source src="assets/song/clear_song.mp3" type="audio/mpeg" />
   </audio>
 
   <!-- 상단 고정 뮤직 플레이어 -->
@@ -91,13 +91,12 @@
         </div>
       </div>
 
-      <!-- 날씨 아이콘 (구름/해도 유리 처리) -->
+      <!-- 날씨 아이콘 (날씨별 SVG + 프로스트 유리). JS가 클래스/이미지 교체 -->
       <div class="weather-icon reveal">
-        <div class="wi-glass wi-sun" aria-hidden="true"></div>
-        <div class="wi-glass wi-cloud" aria-hidden="true"></div>
-        <svg class="wi-outline" viewBox="0 0 355 263" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M37.1019 65.8282C62.7323 41.129 98.4829 26.8436 133.858 33.5548C169.028 40.2273 203.691 67.6272 227.617 125.861C227.611 125.834 227.608 125.819 227.608 125.816C252.051 101.372 281.812 99.3646 309.086 110.878C385.415 146.701 350.857 256.999 306.678 259.05C306.377 259.156 306.014 259.256 305.596 259.349C303.25 259.87 298.765 260.315 292.643 260.687C280.374 261.431 261.383 261.886 239.38 262.012C195.373 262.263 139.276 261.199 100.738 258.501C96.5288 258.206 92.2011 257.165 88.3255 255.493C31.6976 231.068 6.00484 196.041 0.948551 160.859C-4.10404 125.703 11.472 90.527 37.1019 65.8282Z" />
-        </svg>
+        <div class="ricon ricon--hero ricon--clear">
+          <div class="ricon__frost"></div>
+          <div class="ricon__art"><img alt="" src="assets/svg/clear.svg" /></div>
+        </div>
       </div>
     </div>
   </section>
@@ -110,7 +109,7 @@
       </div>
 
       <div class="card song__album reveal">
-        <img src="album.png" alt="romeo n juliet 앨범 커버" />
+        <img src="assets/album/clear_album.png" alt="앨범 커버" />
       </div>
 
       <div class="card song__meta reveal">
@@ -160,6 +159,6 @@
     </div>
   </section>
 
-  <script src="script.js?v=9" onerror="document.documentElement.classList.remove('js')"></script>
+  <script src="script.js?v=12" onerror="document.documentElement.classList.remove('js')"></script>
 </body>
 </html>

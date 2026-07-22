@@ -1,18 +1,132 @@
-// ===== 곡명 마퀴 (항상 슬라이드) =====
-window.addEventListener("load", () => {
-  document.querySelectorAll(".marquee").forEach((marquee) => {
-    const track = marquee.querySelector(".marquee__track");
-    const item = track.querySelector(".marquee__item");
+// ===== 날씨별 컨텐츠 (타이틀/서브타이틀/곡명) =====
+const WEATHER = {
+  clear: {
+    title: "오늘 하늘은 눈부시게 맑아요.<br>산책을 다녀오는 건 어떨까요?",
+    subtitle: "햇살 가득한 날엔 경쾌하고 밝은 곡으로!<br>창문 열고 볼륨을 살짝 높여보세요.",
+    song: "romeo n juliet (feat. 유라(youra)) - 죠지, 유라",
+  },
+  cloudy: {
+    title: "구름이 하늘을 살포시 덮었어요.<br>차분하게 하루를 보내보는 건 어때요?",
+    subtitle: "잔잔한 하늘엔 포근한 멜로디가 어울려요.<br>따뜻한 차 한 잔과 함께 들어보세요.",
+    song: "Alone (Feat. 쏠 (SOLE), 다운 (Dvwn)) - Cosmic Boy",
+  },
+  rainy: {
+    title: "창밖으로 빗방울이 떨어지고 있어요.<br>오늘은 안에서 여유를 즐겨봐요.",
+    subtitle: "빗소리엔 감성적인 곡이 제격이에요.<br>빗방울 리듬에 마음을 맡겨보세요.",
+    song: "아무도 그대를 바라지 않는 - 알레프",
+  },
+  snowy: {
+    title: "하얀 눈이 소복이 내리고 있어요.<br>따뜻하게 입고 눈길을 걸어볼까요?",
+    subtitle: "새하얀 겨울엔 포근한 노래 한 곡.<br>창가에 앉아 눈 오는 풍경을 즐겨요.",
+    song: "~할때만 (Feat.JUNNY) - dress, Raf Sandou, JUNNY",
+  },
+};
 
-    const clone = item.cloneNode(true);
-    clone.setAttribute("aria-hidden", "true");
-    track.appendChild(clone);
-    track.classList.add("is-animating");
+// WMO weather_code -> {text, icon(=clear/cloudy/rainy/snowy)}
+function mapWeather(code) {
+  const c = Number(code);
+  if ([71, 73, 75, 77, 85, 86].includes(c)) return { text: "눈", icon: "snowy" };
+  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(c)) {
+    return { text: c >= 95 ? "뇌우" : "비", icon: "rainy" };
+  }
+  if (c === 0 || c === 1) return { text: "맑음", icon: "clear" };
+  if (c === 2) return { text: "구름 조금", icon: "cloudy" };
+  if (c === 45 || c === 48) return { text: "안개", icon: "cloudy" };
+  return { text: "흐림", icon: "cloudy" }; // 3 및 기본
+}
 
-    const speed = 45; // px/초
-    track.style.animationDuration = item.scrollWidth / speed + "s";
+// ===== 곡명 마퀴 =====
+function initMarquee(text) {
+  const marquee = document.querySelector(".marquee");
+  if (!marquee) return;
+  const track = marquee.querySelector(".marquee__track");
+  const prev = track.querySelector(".marquee__item");
+  const content = text != null ? text : prev ? prev.textContent : "";
+
+  track.innerHTML = "";
+  const item = document.createElement("span");
+  item.className = "marquee__item";
+  item.textContent = content;
+  track.appendChild(item);
+  const clone = item.cloneNode(true);
+  clone.setAttribute("aria-hidden", "true");
+  track.appendChild(clone);
+
+  track.classList.add("is-animating");
+  const speed = 45; // px/초
+  track.style.animationDuration = item.scrollWidth / speed + "s";
+}
+window.addEventListener("load", () => initMarquee());
+
+// ===== 자동재생 (막히면 첫 사용자 상호작용 때 재생) =====
+let _autoplayArmed = false;
+function tryAutoplay() {
+  const audio = document.getElementById("player-audio");
+  if (!audio) return;
+  audio.play().catch(() => {
+    // 브라우저 자동재생 차단 → 첫 클릭/스크롤/키 입력 때 재생
+    if (_autoplayArmed) return;
+    _autoplayArmed = true;
+    const events = ["pointerdown", "keydown", "touchstart", "scroll", "click"];
+    const start = (e) => {
+      // 재생 버튼은 자체 핸들러가 처리 (토글 충돌 방지)
+      if (e && e.target && e.target.closest && e.target.closest("#playBtn")) return;
+      audio.play().catch(() => {});
+    };
+    events.forEach((ev) => window.addEventListener(ev, start, { passive: true }));
+    audio.addEventListener(
+      "play",
+      () => events.forEach((ev) => window.removeEventListener(ev, start)),
+      { once: true }
+    );
   });
-});
+}
+
+// ===== 히어로/음악을 날씨에 맞게 적용 =====
+function applyHeroWeather(cond) {
+  if (!WEATHER[cond]) cond = "clear";
+  const w = WEATHER[cond];
+
+  const bgHero = document.querySelector(".bg-hero");
+  if (bgHero) bgHero.style.backgroundImage = `url("assets/weather%20background/${cond}_background.png")`;
+
+  const tp = document.querySelector(".card--title p");
+  const sp = document.querySelector(".card--subtitle p");
+  if (tp) tp.innerHTML = w.title;
+  if (sp) sp.innerHTML = w.subtitle;
+
+  const ricon = document.querySelector(".weather-icon .ricon");
+  if (ricon) {
+    ricon.className = "ricon ricon--hero ricon--" + cond;
+    const img = ricon.querySelector(".ricon__art img");
+    if (img) img.src = `assets/svg/${cond}.svg`;
+  }
+
+  const albumImg = document.querySelector(".song__album img");
+  if (albumImg) albumImg.src = `assets/album/${cond}_album.png`;
+  const bgSong = document.querySelector(".bg-song");
+  if (bgSong) bgSong.style.backgroundImage = `url("assets/album/${cond}_album.png")`;
+
+  // 노래 섹션 곡명도 플레이어와 동일하게
+  const metaP = document.querySelector(".song__meta p");
+  if (metaP) metaP.textContent = w.song;
+
+  const audio = document.getElementById("player-audio");
+  if (audio) {
+    const src = audio.querySelector("source");
+    if (src) src.src = `assets/song/${cond}_song.mp3`;
+    audio.load(); // 곡 파일이 없으면 재생만 안 될 뿐 나머지는 정상
+  }
+
+  initMarquee(w.song);
+  tryAutoplay(); // 최종 곡 세팅 후 자동재생 시도
+}
+
+// URL 로 강제 지정 (?cloudy / #rainy / /snowy 등) — 디버그용
+function forcedWeather() {
+  const s = (location.pathname + location.search + location.hash).toLowerCase();
+  return ["snowy", "rainy", "cloudy", "clear"].find((k) => s.includes(k)) || null;
+}
 
 // ===== 뮤직 플레이어 (재생/일시정지, 무한 반복, 진행바) =====
 (() => {
@@ -50,7 +164,10 @@ window.addEventListener("load", () => {
 
 // ===== 위치/날씨 =====
 (() => {
-  // 주요 도시 (한글명, 위도, 경도)
+  const FORCED = forcedWeather();
+  // 강제 지정이 있으면 즉시 적용 (내 위치 날씨보다 우선)
+  if (FORCED) applyHeroWeather(FORCED);
+
   const CITIES = [
     { name: "서울", lat: 37.5665, lon: 126.978 },
     { name: "인천", lat: 37.4563, lon: 126.7052 },
@@ -94,21 +211,6 @@ window.addEventListener("load", () => {
     { name: "서귀포", lat: 33.2541, lon: 126.56 },
   ];
 
-  // WMO weather_code -> {text, icon}
-  function mapWeather(code) {
-    const c = Number(code);
-    if ([71, 73, 75, 77, 85, 86].includes(c)) return { text: "눈", icon: "snowy" };
-    if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(c)) {
-      return { text: c >= 95 ? "뇌우" : "비", icon: "rainy" };
-    }
-    if (c === 0) return { text: "맑음", icon: "cloudy" };
-    if (c === 1) return { text: "구름 조금", icon: "cloudy" };
-    if (c === 2) return { text: "구름 많음", icon: "cloudy" };
-    if (c === 45 || c === 48) return { text: "안개", icon: "cloudy" };
-    return { text: "흐림", icon: "cloudy" }; // 3 및 기본
-  }
-
-  // ---- 위치 좌표 얻기 (GPS 우선, 실패 시 IP) ----
   async function ipCoords() {
     try {
       const r = await fetch("https://ipwho.is/");
@@ -132,27 +234,43 @@ window.addEventListener("load", () => {
     });
   }
 
-  // ---- 위치 칩: 한글 주소 + 현재 온도 ----
+  // 위치 칩(주소+온도) + 내 위치 날씨로 히어로 적용
   async function fillChip(lat, lon) {
     const addrEl = document.querySelector(".chip__addr");
     const tempEl = document.querySelector(".chip__temp");
-    if (!addrEl || !tempEl) return;
     try {
       const [wRes, gRes] = await Promise.all([
-        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m`),
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code`),
         fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ko`),
       ]);
       const w = await wRes.json();
       const g = await gRes.json();
-      if (w && w.current && typeof w.current.temperature_2m === "number") {
+
+      if (tempEl && w && w.current && typeof w.current.temperature_2m === "number") {
         tempEl.innerHTML = Math.round(w.current.temperature_2m) + '<span class="chip__unit">°C</span>';
       }
-      const parts = [g.principalSubdivision, g.city || g.locality].filter(Boolean);
-      if (parts.length) addrEl.textContent = parts.join(" ");
+      if (addrEl) {
+        // 행정구역 레벨 4(시/도) + 6(시/군/구). 광역시 중복(대전광역시 대전광역시) 방지
+        const admin = (g.localityInfo && g.localityInfo.administrative) || [];
+        const atLevel = (lvl) => {
+          const e = admin.find((a) => a.adminLevel === lvl);
+          return e ? e.name : "";
+        };
+        const prov = atLevel(4) || g.principalSubdivision || "";
+        let dist = atLevel(6) || (g.city !== prov ? g.city : "") || g.locality || "";
+        const parts = [prov];
+        if (dist && dist !== prov) parts.push(dist);
+        const addr = parts.filter(Boolean).join(" ");
+        if (addr) addrEl.textContent = addr;
+      }
+      // 내 위치 날씨 → 히어로/음악 (URL 강제 지정이 없을 때만)
+      if (!FORCED && w && w.current && w.current.weather_code != null) {
+        applyHeroWeather(mapWeather(w.current.weather_code).icon);
+      }
     } catch (e) {}
   }
 
-  // ---- 다른 지역 카드: 가장 가까운 다른 도시 3곳 ----
+  // 가장 가까운 다른 도시 3곳
   async function fillRegions(lat, lon) {
     const cards = document.querySelectorAll(".region-card");
     if (!cards.length) return;
@@ -163,14 +281,13 @@ window.addEventListener("load", () => {
       d: (c.lat - lat) ** 2 + ((c.lon - lon) * cosLat) ** 2,
     }))
       .sort((a, b) => a.d - b.d)
-      .slice(1, 4) // 가장 가까운 1곳(=내 지역) 제외 후 3곳
+      .slice(1, 4)
       .map((x) => x.c);
 
-    // 먼저 도시명 + 기본 아이콘 세팅
     picks.forEach((p, i) => {
       const card = cards[i];
       card.querySelector(".region-card__name span").textContent = p.name;
-      card.querySelector(".ricon__art img").src = "cloudy.svg";
+      card.querySelector(".ricon__art img").src = "assets/svg/clear.svg";
     });
 
     try {
@@ -192,32 +309,34 @@ window.addEventListener("load", () => {
             Math.round(cur.temperature_2m) + '<span class="region-card__unit">°C</span>';
         }
         const ricon = card.querySelector(".ricon");
-        ricon.classList.remove("ricon--cloudy", "ricon--rainy", "ricon--snowy");
+        ricon.classList.remove("ricon--clear", "ricon--cloudy", "ricon--rainy", "ricon--snowy");
         ricon.classList.add("ricon--" + w.icon);
-        card.querySelector(".ricon__art img").src = w.icon + ".svg";
+        card.querySelector(".ricon__art img").src = `assets/svg/${w.icon}.svg`;
       });
     } catch (e) {}
   }
 
   getCoords().then((coords) => {
-    if (!coords) return;
+    if (!coords) {
+      if (!FORCED) applyHeroWeather("clear");
+      return;
+    }
     fillChip(coords.lat, coords.lon);
     fillRegions(coords.lat, coords.lon);
   });
 })();
 
 // ===== 마지막 섹션 배경: 접속 시간대별 =====
-// morning / lunch / evening / night .png 파일이 폴더에 있으면 자동 교체 (없으면 sky.png 유지)
 (() => {
   const el = document.querySelector(".bg-regions");
   if (!el) return;
   const h = new Date().getHours();
-  let img = "night.png"; // 밤 (21~4시)
-  if (h >= 5 && h < 11) img = "morning.png"; // 아침 (5~10시)
-  else if (h >= 11 && h < 17) img = "lunch.png"; // 점심 (11~16시)
-  else if (h >= 17 && h < 21) img = "evening.png"; // 저녁 (17~20시)
+  let name = "night"; // 밤 (21~4시)
+  if (h >= 5 && h < 11) name = "morning"; // 아침 (5~10시)
+  else if (h >= 11 && h < 17) name = "lunch"; // 점심 (11~16시)
+  else if (h >= 17 && h < 21) name = "evening"; // 저녁 (17~20시)
 
-  // 파일이 실제로 있을 때만 배경 교체 (없으면 CSS 기본값 sky.png 유지)
+  const img = `assets/time%20background/${name}.png`;
   const probe = new Image();
   probe.onload = () => {
     el.style.backgroundImage = `url("${img}")`;
@@ -235,7 +354,6 @@ window.addEventListener("load", () => {
   const update = () => {
     const vh = window.innerHeight || 1;
     const t = window.scrollY / vh; // 0=맑음, 1=노래, 2=다른지역
-    // 잎사귀(bg-hero)는 항상 바닥, 위 레이어를 순서대로 페이드인
     song.style.opacity = clamp(t, 0, 1);
     regions.style.opacity = clamp(t - 1, 0, 1);
   };
@@ -253,18 +371,15 @@ window.addEventListener("load", () => {
   const reveal = (s) => s.classList.add("in-view");
   const unreveal = (s) => s.classList.remove("in-view");
 
-  // 화면 중앙 밴드(25%~75%)에 걸치면 '보임'으로 판단
   const inBand = (el) => {
     const r = el.getBoundingClientRect();
     return r.top < window.innerHeight * 0.75 && r.bottom > window.innerHeight * 0.25;
   };
 
-  // 첫 페인트 뒤 등장 → 로드 애니메이션 재생 (setTimeout은 백그라운드 탭에서도 동작)
   const revealVisible = () => sections.forEach((s) => inBand(s) && reveal(s));
   setTimeout(revealVisible, 60);
   window.addEventListener("load", () => setTimeout(revealVisible, 60));
 
-  // 스크롤 진입/이탈 감지 (재진입 시 다시 재생)
   if ("IntersectionObserver" in window) {
     const io = new IntersectionObserver(
       (entries) => {
@@ -277,10 +392,8 @@ window.addEventListener("load", () => {
     );
     sections.forEach((s) => io.observe(s));
   } else {
-    // 폴백: 스크롤 이벤트
     const onScroll = () => sections.forEach((s) => (inBand(s) ? reveal(s) : unreveal(s)));
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
   }
 })();
-
